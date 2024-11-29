@@ -59,3 +59,9 @@ repos:
         language: rust
         files: \.rs$
         pass_filenames: false
+      # - id: cargo-audit
+      #   name: cargo audit
+      #   description: audit crates
+      #   entry: bash -c 'cargo audit'
+      #   language: rust
+      #   files: \.rs$

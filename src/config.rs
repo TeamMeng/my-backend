@@ -11,14 +11,14 @@ pub struct AppConfig {
 
 #[derive(Serialize, Deserialize)]
 pub struct ServerConfig {
-    port: u16,
-    db_url: String,
+    pub port: u16,
+    pub db_url: String,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct AuthConfig {
-    ek: String,
-    dk: String,
+    pub ek: String,
+    pub dk: String,
 }
 
 impl AppConfig {

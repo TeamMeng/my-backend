@@ -80,14 +80,14 @@ impl AppState {
         Ok(user)
     }
 
-    pub async fn login_user(&self, input: LoginUser) -> Result<bool, AppError> {
+    pub async fn login_user(&self, input: LoginUser) -> Result<User, AppError> {
         let ret = self.find_user_by_email(&input.email).await?;
 
         match ret {
             Some(user) => {
                 let is_valid = verify_password(&input.password, &user.password_hash)?;
                 if is_valid {
-                    Ok(true)
+                    Ok(user)
                 } else {
                     Err(AppError::UserError(format!(
                         "{} by user password is error",
@@ -207,9 +207,9 @@ mod tests {
 
         let input = LoginUser::new(email, password);
 
-        let ret = state.login_user(input).await?;
+        let user = state.login_user(input).await?;
 
-        assert!(ret);
+        assert_eq!(user.email, email);
 
         Ok(())
     }

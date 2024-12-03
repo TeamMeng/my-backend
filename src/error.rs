@@ -1,3 +1,4 @@
+use axum::{http::StatusCode, response::IntoResponse};
 use std::io;
 use thiserror::Error;
 
@@ -20,4 +21,18 @@ pub enum AppError {
 
     #[error("sqlx error: {0}")]
     SqlxError(#[from] sqlx::Error),
+}
+
+impl IntoResponse for AppError {
+    fn into_response(self) -> axum::response::Response {
+        let status = match &self {
+            Self::Argon2Error(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            Self::UserError(_) => StatusCode::BAD_REQUEST,
+            Self::IoError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            Self::JwtError(_) => StatusCode::BAD_REQUEST,
+            Self::SerdeYamlError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            Self::SqlxError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+        };
+        status.into_response()
+    }
 }

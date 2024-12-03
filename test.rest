@@ -1,2 +1,27 @@
 ### index handler
 GET http://localhost:6688
+
+### create user
+POST http://localhost:6688/signup
+Content-Type: application/json
+
+{
+    "name": "TeamMeng",
+    "email": "Meng@123.com",
+    "password": "hunter42"
+}
+
+### login user
+# @name signin
+POST http://localhost:6688/login
+Content-Type: application/json
+
+{
+    "email": "Meng@123.com",
+    "password": "hunter42"
+}
+
+@token = {{signin.response.body.token}}
+### delete user
+DELETE http://localhost:6688/delete
+Authorization: Bearer {{token}}

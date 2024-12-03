@@ -1,5 +1,7 @@
 mod config;
 mod error;
+mod handler;
+mod middleware;
 mod model;
 mod util;
 
@@ -9,6 +11,8 @@ use std::{ops::Deref, path::Path, sync::Arc};
 
 pub use config::AppConfig;
 pub use error::AppError;
+pub use handler::{create_user_handler, delete_user_handler, login_handler};
+pub use middleware::verify_token;
 pub use model::{CreateUser, LoginUser, User};
 pub use util::{DecodingKey, EncodingKey};
 

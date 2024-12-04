@@ -22,6 +22,19 @@ Content-Type: application/json
 }
 
 @token = {{signin.response.body.token}}
+
+### change user
+POST http://localhost:6688/change
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "email": "Alice@123.com",
+    "name": "TeamAlice",
+    "password": "123456"
+}
+
+
 ### delete user
 DELETE http://localhost:6688/delete
-Authorization: Bearer {{token}}
+Authorization: Bearer eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3MzMyOTk4NzksImV4cCI6MTczNTg5MTg3OSwibmJmIjoxNzMzMjk5ODc5LCJpc3MiOiJzZXJ2ZXIiLCJhdWQiOiJ3ZWIiLCJpZCI6NiwibmFtZSI6IlRlYW1BbGljZSIsImVtYWlsIjoiQWxpY2VAMTIzLmNvbSIsInBhc3N3b3JkX2hhc2giOiIkYXJnb24yaWQkdj0xOSRtPTE5NDU2LHQ9MixwPTEkNWNQNW5zc3ZtN2dTdWdqNGYvYVhLQSRlZXhYMFVEMEhFREJhTWxkODk5ZDk4WUNHVjhmVWVxUFJQTldtSDZ6SEMwIiwiY3JlYXRlZF9hdCI6IjIwMjQtMTItMDRUMDg6MTA6NDIuNDQyMDU0WiJ9.hi5OeEGn0ET15Nn0ojgr0cWgkG5Xv1o9-Ty8-Wn-gcqvksU9RMwwwC5CbNiJCFctTehdBJH9FYYKOTcFofGbAQ

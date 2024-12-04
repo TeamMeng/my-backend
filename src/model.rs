@@ -29,6 +29,13 @@ pub struct LoginUser {
     pub password: String,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ChangeUser {
+    pub email: Option<String>,
+    pub name: Option<String>,
+    pub password: Option<String>,
+}
+
 impl AppState {
     pub async fn create_user(&self, input: CreateUser) -> Result<User, AppError> {
         if let Some(user) = self.find_user_by_email(&input.email).await? {
@@ -99,6 +106,55 @@ impl AppState {
                 "{} by user not find",
                 input.email
             ))),
+        }
+    }
+
+    pub async fn change_user_message(
+        &self,
+        mut user: User,
+        input: ChangeUser,
+    ) -> Result<User, AppError> {
+        if let Some(name) = input.name {
+            sqlx::query(
+                "
+                UPDATE users set name = $1 WHERE email = $2
+                ",
+            )
+            .bind(&name)
+            .bind(&user.email)
+            .execute(&self.pool)
+            .await?;
+            user.name = name;
+        };
+
+        if let Some(password) = input.password {
+            let password_hash = hash_password(&password)?;
+
+            sqlx::query(
+                "
+                UPDATE users set password_hash = $1 WHERE email = $2
+                ",
+            )
+            .bind(&password_hash)
+            .bind(&user.email)
+            .execute(&self.pool)
+            .await?;
+            user.password_hash = password_hash;
+        };
+
+        if let Some(email) = input.email {
+            let user = sqlx::query_as(
+                "
+                UPDATE users set email = $1 WHERE email = $2 RETURNING *
+                ",
+            )
+            .bind(email)
+            .bind(user.email)
+            .fetch_one(&self.pool)
+            .await?;
+            Ok(user)
+        } else {
+            Ok(user)
         }
     }
 }
@@ -214,6 +270,37 @@ mod tests {
         Ok(())
     }
 
+    #[tokio::test]
+    async fn change_user_message_should_work() -> Result<()> {
+        let (_tdb, state) = AppState::new_for_test().await?;
+
+        let user = state
+            .find_user_by_email("Meng@123.com")
+            .await?
+            .expect("User should exists");
+
+        let name = "TeamAlice".to_string();
+        let email = "Alice@123.com".to_string();
+        let password = "123456".to_string();
+
+        let input = ChangeUser::new(
+            Some(name.clone()),
+            Some(email.clone()),
+            Some(password.clone()),
+        );
+
+        let user = state.change_user_message(user, input).await?;
+
+        assert_eq!(user.email, email);
+        assert_eq!(user.name, name);
+
+        let is_valid = verify_password(&password, &user.password_hash)?;
+
+        assert!(is_valid);
+
+        Ok(())
+    }
+
     impl CreateUser {
         fn new(
             name: impl Into<String>,
@@ -233,6 +320,16 @@ mod tests {
             Self {
                 email: email.into(),
                 password: password.into(),
+            }
+        }
+    }
+
+    impl ChangeUser {
+        fn new(name: Option<String>, email: Option<String>, password: Option<String>) -> Self {
+            Self {
+                name,
+                email,
+                password,
             }
         }
     }

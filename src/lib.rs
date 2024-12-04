@@ -5,16 +5,25 @@ mod middleware;
 mod model;
 mod util;
 
+use axum::{
+    middleware::from_fn_with_state,
+    routing::{delete, post},
+    Router,
+};
 use sqlx::{Executor, PgPool};
 use sqlx_db_tester::TestPg;
 use std::{ops::Deref, path::Path, sync::Arc};
 
 pub use config::AppConfig;
 pub use error::AppError;
-pub use handler::{create_user_handler, delete_user_handler, login_handler};
+pub use handler::{
+    change_user_message_handler, create_user_handler, delete_user_handler, login_handler,
+};
 pub use middleware::verify_token;
-pub use model::{CreateUser, LoginUser, User};
+pub use model::{ChangeUser, CreateUser, LoginUser, User};
 pub use util::{DecodingKey, EncodingKey};
+
+pub const ADDR: &str = "127.0.0.1:";
 
 #[derive(Clone)]
 pub struct AppState {
@@ -26,6 +35,18 @@ pub struct AppStateInner {
     pub pool: PgPool,
     pub ek: EncodingKey,
     pub dk: DecodingKey,
+}
+
+pub fn get_router(state: AppState) -> Result<Router, AppError> {
+    let app = Router::new()
+        .route("/delete", delete(delete_user_handler))
+        .route("/change", post(change_user_message_handler))
+        .layer(from_fn_with_state(state.clone(), verify_token))
+        .route("/login", post(login_handler))
+        .route("/signup", post(create_user_handler))
+        .with_state(state);
+
+    Ok(app)
 }
 
 impl AppState {

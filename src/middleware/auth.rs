@@ -54,3 +54,72 @@ pub async fn verify_token(State(state): State<AppState>, req: Request, next: Nex
     };
     next.run(req).await
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use anyhow::Result;
+    use axum::{body::Body, http::Request, middleware::from_fn_with_state, routing::get, Router};
+    use tower::ServiceExt;
+
+    async fn handler() -> impl IntoResponse {
+        (StatusCode::OK, "OK")
+    }
+
+    #[tokio::test]
+    async fn verify_token_should_work() -> Result<()> {
+        let (_tdb, state) = AppState::new_for_test().await?;
+
+        let email = "Meng@123.com";
+        let user = state
+            .find_user_by_email(email)
+            .await?
+            .expect("user should exists");
+
+        let token = state.ek.sign(user)?;
+
+        let app = Router::new()
+            .route("/", get(handler))
+            .layer(from_fn_with_state(state.clone(), verify_token))
+            .with_state(state);
+
+        // good token
+        let req = Request::builder()
+            .uri("/")
+            .header("Authorization", format!("Bearer {}", token))
+            .body(Body::empty())?;
+
+        let res = app.clone().oneshot(req).await?;
+
+        assert_eq!(res.status(), StatusCode::OK);
+
+        // good token in query params
+        let req = Request::builder()
+            .uri(format!("/?token={}", token))
+            .body(Body::empty())?;
+        let res = app.clone().oneshot(req).await?;
+        assert_eq!(res.status(), StatusCode::OK);
+
+        // no token
+        let req = Request::builder().uri("/").body(Body::empty())?;
+        let res = app.clone().oneshot(req).await?;
+        assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
+
+        // bad token
+        let req = Request::builder()
+            .uri("/")
+            .header("Authorization", "Bearer bad-token")
+            .body(Body::empty())?;
+        let res = app.clone().oneshot(req).await?;
+        assert_eq!(res.status(), StatusCode::FORBIDDEN);
+
+        // bad token in query params
+        let req = Request::builder()
+            .uri("/?token=bad-token")
+            .body(Body::empty())?;
+        let res = app.oneshot(req).await?;
+        assert_eq!(res.status(), StatusCode::FORBIDDEN);
+
+        Ok(())
+    }
+}

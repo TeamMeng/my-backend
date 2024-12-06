@@ -1,4 +1,4 @@
-### create user
+### create user TeamMeng
 POST http://localhost:6688/signup
 Content-Type: application/json
 
@@ -8,7 +8,18 @@ Content-Type: application/json
     "password": "hunter42"
 }
 
-### login user
+
+### create user TeamAlice
+POST http://localhost:6688/signup
+Content-Type: application/json
+
+{
+    "name": "TeamAlice",
+    "email": "Alice@123.com",
+    "password": "hunter42"
+}
+
+### login user Meng@123.com
 # @name signin
 POST http://localhost:6688/login
 Content-Type: application/json
@@ -20,7 +31,21 @@ Content-Type: application/json
 
 @token = {{signin.response.body.token}}
 
-### shorten url
+### login user Alice@123.com
+# @name signin1
+POST http://localhost:6688/login
+Content-Type: application/json
+
+{
+    "email": "Alice@123.com",
+    "password": "hunter42"
+}
+
+@token = {{signin1.response.body.token}}
+
+
+
+### TeaMeng shorten url
 POST http://localhost:6688/short
 Content-Type: application/json
 Authorization: Bearer {{token}}
@@ -29,8 +54,17 @@ Authorization: Bearer {{token}}
     "url": "www.baidu.com"
 }
 
+### TeamAlice shorten url
+POST http://localhost:6688/short
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "url": "www.360.com"
+}
+
 ### get url
-GET http://localhost:6688/knP1tv
+GET http://localhost:6688/w0YIw1
 Authorization: Bearer {{token}}
 
 ### get all url
@@ -39,7 +73,6 @@ Authorization: Bearer {{token}}
 
 ### change user
 
-# @name signin1
 POST http://localhost:6688/change
 Content-Type: application/json
 Authorization: Bearer {{token}}
@@ -49,7 +82,6 @@ Authorization: Bearer {{token}}
     "name": "TeamAlice",
     "password": "123456"
 }
-@token = {{signin1.response.body.token}}
 
 ### delete user
 DELETE http://localhost:6688/delete

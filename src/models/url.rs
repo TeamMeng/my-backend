@@ -5,7 +5,8 @@ use sqlx::FromRow;
 #[derive(Serialize, Deserialize, FromRow)]
 #[serde(rename_all = "camelCase")]
 pub struct Url {
-    pub id: String,
+    pub id: i64,
+    pub short: String,
     pub user_id: i64,
     pub url: String,
 }
@@ -27,25 +28,25 @@ pub struct MoreOutput {
 
 impl AppState {
     pub async fn shorten(&self, user_id: i64, input: CreateUrl) -> Result<Output, AppError> {
-        let id = nanoid::nanoid!(6);
+        let short = nanoid::nanoid!(6);
         let url: Url = sqlx::query_as(
             "
-            INSERT INTO urls (id, user_id, url) VALUES ($1, $2, $3) ON CONFLICT(url) DO UPDATE SET url = EXCLUDED.url RETURNING *
+            INSERT INTO urls (short, user_id ,url) VALUES ($1, $2, $3) ON CONFLICT(url) DO UPDATE SET url=EXCLUDED.url RETURNING *
             "
         )
-        .bind(id)
+        .bind(short)
         .bind(user_id)
         .bind(input.url)
         .fetch_one(&self.pool)
         .await?;
 
-        Ok(Output::new(url.id))
+        Ok(Output::new(url.short))
     }
 
     pub async fn get_url(&self, user_id: i64, id: String) -> Result<Output, AppError> {
         let url: Url = sqlx::query_as(
             "
-            SELECT * FROM urls WHERE user_id = $1 AND id = $2
+            SELECT * FROM urls WHERE user_id = $1 AND short = $2
             ",
         )
         .bind(user_id)

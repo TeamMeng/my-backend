@@ -1,53 +1,15 @@
-use crate::{AppError, AppState, ChangeUser, CreateUser, LoginUser, User};
-use axum::{extract::State, http::StatusCode, response::IntoResponse, Extension, Json};
-use serde::{Deserialize, Serialize};
+mod urls;
+mod users;
 
-#[derive(Serialize, Deserialize)]
-pub struct AuthOutput {
-    token: String,
-}
-
-pub async fn create_user_handler(
-    State(state): State<AppState>,
-    Json(input): Json<CreateUser>,
-) -> Result<impl IntoResponse, AppError> {
-    state.create_user(input).await?;
-    Ok(StatusCode::CREATED)
-}
-
-pub async fn login_handler(
-    State(state): State<AppState>,
-    Json(input): Json<LoginUser>,
-) -> Result<impl IntoResponse, AppError> {
-    let user = state.login_user(input).await?;
-    let token = state.ek.sign(user)?;
-    Ok((StatusCode::OK, Json(AuthOutput { token })))
-}
-
-pub async fn delete_user_handler(
-    Extension(user): Extension<User>,
-    State(state): State<AppState>,
-) -> Result<impl IntoResponse, AppError> {
-    state.delete_user_by_email(&user.email).await?;
-    Ok(StatusCode::OK)
-}
-
-pub async fn change_user_message_handler(
-    Extension(user): Extension<User>,
-    State(state): State<AppState>,
-    Json(input): Json<ChangeUser>,
-) -> Result<impl IntoResponse, AppError> {
-    let user = state.change_user_message(user, input).await?;
-    let token = state.ek.sign(user)?;
-    Ok((StatusCode::OK, Json(AuthOutput { token })))
-}
+pub use urls::*;
+pub use users::*;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::get_router;
+    use crate::{get_router, AppState, MoreOutput, Output};
     use anyhow::Result;
     use reqwest::Client;
+    use serde::Deserialize;
     use std::net::SocketAddr;
     use tokio::net::TcpListener;
 
@@ -57,6 +19,7 @@ mod tests {
         addr: SocketAddr,
         token: String,
         client: Client,
+        path: String,
     }
 
     #[derive(Deserialize)]
@@ -68,6 +31,9 @@ mod tests {
     async fn server_should_work() -> Result<()> {
         let (_tdb, state) = AppState::new_for_test().await?;
         let mut server = Server::new(state).await?;
+        server.path = server.short().await?;
+        server.get_url().await?;
+        server.get_urls().await?;
         server.token = server.change().await?;
         server.delete().await?;
 
@@ -92,6 +58,7 @@ mod tests {
                 addr,
                 client,
                 token: "".to_string(),
+                path: "".to_string(),
             };
 
             ret.signup().await?;
@@ -156,6 +123,57 @@ mod tests {
                 .await?;
 
             assert_eq!(res.status(), 200);
+
+            Ok(())
+        }
+
+        async fn short(&self) -> Result<String> {
+            let res = self
+                .client
+                .post(format!("http://{}/short", self.addr))
+                .header("Authorization", format!("Bearer {}", self.token))
+                .header("Content-Type", "application/json")
+                .body(r#"{"url": "www.360.com"}"#)
+                .send()
+                .await?;
+
+            assert_eq!(res.status(), 200);
+
+            let ret: Output = res.json().await?;
+
+            Ok(ret.output)
+        }
+
+        async fn get_url(&self) -> Result<()> {
+            let res = self
+                .client
+                .get(format!("http://{}/{}", self.addr, self.path))
+                .header("Authorization", format!("Bearer {}", self.token))
+                .send()
+                .await?;
+
+            assert_eq!(res.status(), 200);
+
+            let ret: Output = res.json().await?;
+
+            assert_eq!(ret.output, "www.360.com");
+
+            Ok(())
+        }
+
+        async fn get_urls(&self) -> Result<()> {
+            let res = self
+                .client
+                .get(format!("http://{}/urls", self.addr))
+                .header("Authorization", format!("Bearer {}", self.token))
+                .send()
+                .await?;
+
+            assert_eq!(res.status(), 200);
+
+            let ret: MoreOutput = res.json().await?;
+
+            assert_eq!(ret.output.len(), 1);
 
             Ok(())
         }

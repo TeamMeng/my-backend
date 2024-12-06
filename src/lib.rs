@@ -1,13 +1,13 @@
 mod config;
 mod error;
-mod handler;
+mod handlers;
 mod middleware;
-mod model;
+mod models;
 mod util;
 
 use axum::{
     middleware::from_fn_with_state,
-    routing::{delete, post},
+    routing::{delete, get, post},
     Router,
 };
 use sqlx::{Executor, PgPool};
@@ -16,11 +16,12 @@ use std::{ops::Deref, path::Path, sync::Arc};
 
 pub use config::AppConfig;
 pub use error::AppError;
-pub use handler::{
-    change_user_message_handler, create_user_handler, delete_user_handler, login_handler,
+pub use handlers::{
+    change_user_message_handler, create_user_handler, delete_user_handler, get_all_urls_handler,
+    login_handler, redirect_handler, shorten_handler,
 };
 pub use middleware::verify_token;
-pub use model::{ChangeUser, CreateUser, LoginUser, User};
+pub use models::{ChangeUser, CreateUrl, CreateUser, LoginUser, MoreOutput, Output, Url, User};
 pub use util::{DecodingKey, EncodingKey};
 
 pub const ADDR: &str = "127.0.0.1:";
@@ -41,6 +42,9 @@ pub fn get_router(state: AppState) -> Result<Router, AppError> {
     let app = Router::new()
         .route("/delete", delete(delete_user_handler))
         .route("/change", post(change_user_message_handler))
+        .route("/:id", get(redirect_handler))
+        .route("/urls", get(get_all_urls_handler))
+        .route("/short", post(shorten_handler))
         .layer(from_fn_with_state(state.clone(), verify_token))
         .route("/login", post(login_handler))
         .route("/signup", post(create_user_handler))

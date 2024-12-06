@@ -26,3 +26,12 @@ openssl genpkey -algorithm ed25519 -out encoding.pem
 # export its pubkey
 openssl pkey -in encoding.pem -pubout -out decoding.pem
 ```
+
+# 3. shortener
+```sql
+CREATE TABLE urls (
+    id CHAR(6) PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id),
+    url TEXT NOT NULL UNIQUE
+)
+```

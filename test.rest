@@ -1,6 +1,3 @@
-### index handler
-GET http://localhost:6688
-
 ### create user
 POST http://localhost:6688/signup
 Content-Type: application/json
@@ -23,7 +20,26 @@ Content-Type: application/json
 
 @token = {{signin.response.body.token}}
 
+### shorten url
+POST http://localhost:6688/short
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "url": "www.baidu.com"
+}
+
+### get url
+GET http://localhost:6688/knP1tv
+Authorization: Bearer {{token}}
+
+### get all url
+GET http://localhost:6688/urls
+Authorization: Bearer {{token}}
+
 ### change user
+
+# @name signin1
 POST http://localhost:6688/change
 Content-Type: application/json
 Authorization: Bearer {{token}}
@@ -33,7 +49,7 @@ Authorization: Bearer {{token}}
     "name": "TeamAlice",
     "password": "123456"
 }
-
+@token = {{signin1.response.body.token}}
 
 ### delete user
 DELETE http://localhost:6688/delete
